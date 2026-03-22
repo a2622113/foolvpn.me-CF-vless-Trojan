@@ -1,42 +1,40 @@
-name: Proxy Scanner
+name: 扫描 代理
 
 on:
-  workflow_dispatch: # 支持手动点击运行
+  workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *" # 每 6 小时自动运行一次
+    - cron: "0 */6 * * *"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 检出代码
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🟢 安装 Bun 环境
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: 📦 安装依赖
+      - name: Install Dependencies
         run: bun install
 
-      - name: 🔍 执行扫描脚本
+      - name: Run Scan Script
         run: bun run ./helper/proxyip.ts
-        env:
-          # 如果你的脚本需要特定环境变量可以加在这里
 
-      - name: 📝 提交更新到 GitHub
+      - name: Commit to GitHub
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Action"
           git add proxyList.txt kvProxyList.json
-          git commit -m "自动更新代理列表: $(date)" || exit 0
+          git commit -m "Auto update" || exit 0
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
 
-      - name: 🚀 同步到 FTP 空间
+      - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -44,7 +42,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           local-dir: ./
-          # 注意：这里只上传 proxyList.txt，防止覆盖你 FTP 里的其他重要文件
           server-dir: /htdocs/vless/
           exclude: |
             **
